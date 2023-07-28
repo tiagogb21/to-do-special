@@ -1,113 +1,233 @@
-import Image from 'next/image'
+"use client";
+
+import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import {
+    DragDropContext,
+    Droppable,
+    Draggable,
+    DropResult,
+} from "react-beautiful-dnd";
+import TaskMessage, { IToDo } from "./components/TaskMessage";
+
+const initialState: IToDo = {
+    id: uuidv4(),
+    content: "",
+    isComplete: false,
+};
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    const [inputValue, setInputValue] = useState<string>("");
+    const [toDoStore, setToDoStore] = useState<IToDo[]>([initialState]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputValue(e.target.value);
+    };
+
+    const handleClick = () => {
+        if (Boolean(inputValue)) {
+            const newTask: IToDo = {
+                id: uuidv4(),
+                content: inputValue,
+                isComplete: false,
+            };
+
+            setToDoStore((state) => [...state, newTask]);
+            setInputValue("");
+        }
+    };
+
+    const handleClickCheck = (item: IToDo) => {
+        const updatedToDoStore = toDoStore.map((todo) =>
+            todo.id === item.id
+                ? { ...todo, isComplete: !todo.isComplete }
+                : todo
+        );
+
+        setToDoStore(updatedToDoStore);
+    };
+
+    const handleClickDelete = (item: IToDo) => {
+        const deletedItemFromToDoStore = toDoStore.filter(
+            (todo) => todo.id !== item.id
+        );
+        setToDoStore(deletedItemFromToDoStore);
+    };
+
+    const handleChangeUpdate = (item: IToDo, newValue: string) => {
+        const updatedToDoStore = toDoStore.map((todo) =>
+            todo.id === item.id ? { ...todo, content: newValue } : todo
+        );
+
+        setToDoStore(updatedToDoStore);
+    };
+
+    const handleDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
+
+        const items = Array.from(toDoStore);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setToDoStore(items);
+    };
+
+    return (
+        <div className="flex flex-col h-screen w-full">
+            <header className="bg-zinc-950 w-full h-46 py-16 flex items-center justify-center">
+                <h1 className="text-4xl not-italic font-black leading-normal">
+                    <span className="text-sky-500">To</span>
+                    <span className="text-purple-800">Do</span>
+                </h1>
+            </header>
+            <main className="bg-zinc-900 w-full h-screen flex items-start justify-center pt-16">
+                <div className="flex w-2/4 fixed justify-between gap-4 top-40">
+                    <div className="flex items-center gap-2 flex-grow-1 flex-shrink-0 rounded-md  grow">
+                        <input
+                            type="text"
+                            className="p-2 bg-zinc-500 border focus:border-blue-400 focus:ring focus:ring-blue-400 focus:outline-none rounded-md text-white w-full"
+                            placeholder="Adicione uma nova tarefa"
+                            onChange={handleChange}
+                            value={inputValue}
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        className="p-2 justify-center items-center gap-2 rounded-md flex bg-blue-400 text-white hover:bg-blue-500 font-semibold transition duration-300 ease-in-out"
+                        onClick={handleClick}
+                    >
+                        Criar
+                        <span>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="lucide lucide-plus-circle"
+                            >
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M8 12h8" />
+                                <path d="M12 8v8" />
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+                <div className="flex flex-col w-2/4 gap-4">
+                    <div className="flex justify-between items-end self-stretch text-white">
+                        <p className="flex items-center text-sky-500 gap-2">
+                            tarefas criadas:
+                            <span className="flex justify-center bg-zinc-700 h-6 w-6 rounded-full text-white">
+                                {toDoStore.length}
+                            </span>
+                        </p>
+                        <p className="flex items-center text-purple-800 gap-2">
+                            concluídas:
+                            <span className="flex justify-center bg-zinc-700 h-6 w-6 rounded-full text-white">
+                                {
+                                    toDoStore.filter(
+                                        ({ isComplete }: IToDo) => isComplete
+                                    ).length
+                                }
+                            </span>
+                        </p>
+                    </div>
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                        <Droppable droppableId="tasks">
+                            {(provided) => (
+                                <div
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                >
+                                    {toDoStore.length === 0 ? (
+                                        <div className="flex flex-col justify-center items-center gap-4 self-stretch py-16 px-6 text-white border-t border-zinc-800 shadow-md">
+                                            <p className="flex flex-col items-center gap-4">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="24"
+                                                    height="24"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="lucide lucide-clipboard-list"
+                                                >
+                                                    <rect
+                                                        width="8"
+                                                        height="4"
+                                                        x="8"
+                                                        y="2"
+                                                        rx="1"
+                                                        ry="1"
+                                                    />
+                                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                                                    <path d="M12 11h4" />
+                                                    <path d="M12 16h4" />
+                                                    <path d="M8 11h.01" />
+                                                    <path d="M8 16h.01" />
+                                                </svg>
+                                                <span className="font-bold">
+                                                    Você ainda não tem tarefas
+                                                    cadastradas
+                                                </span>
+                                                <span className="font-medium">
+                                                    Crie tarefas e organize seus
+                                                    itens a fazer
+                                                </span>
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        toDoStore.map((item, index) => (
+                                            <Draggable
+                                                key={item.id}
+                                                draggableId={item.id}
+                                                index={index}
+                                            >
+                                                {(provided) => (
+                                                    <div
+                                                        ref={provided.innerRef}
+                                                        {...provided.draggableProps}
+                                                        {...provided.dragHandleProps}
+                                                    >
+                                                        <TaskMessage
+                                                            item={item}
+                                                            handleClickCheck={() =>
+                                                                handleClickCheck(
+                                                                    item
+                                                                )
+                                                            }
+                                                            handleClickDelete={() =>
+                                                                handleClickDelete(
+                                                                    item
+                                                                )
+                                                            }
+                                                            handleChangeUpdate={(
+                                                                value
+                                                            ) =>
+                                                                handleChangeUpdate(
+                                                                    item,
+                                                                    value
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                )}
+                                            </Draggable>
+                                        ))
+                                    )}
+                                    {provided.placeholder}
+                                </div>
+                            )}
+                        </Droppable>
+                    </DragDropContext>
+                </div>
+            </main>
         </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+    );
 }
